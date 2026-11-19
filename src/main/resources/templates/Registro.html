@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Registro de clientes - Arán Shop</title>
+
+    <link rel="stylesheet" th:href="@{/css/Estilos.css}">
+    <link rel="stylesheet" th:href="@{/css/login.css}">
+</head>
+<body>
+
+<header>
+    <h1>Arán Shop</h1>
+    <p>Tienda en línea</p>
+</header>
+
+<main class="contenedor">
+
+    <section class="tarjeta login">
+
+        <h2>Crear cuenta de cliente</h2>
+
+        <div th:if="${error}"
+             th:text="${error}"
+             style="padding: 10px; margin-bottom: 15px;
+                    border-radius: 4px; background-color: #f8d7da;
+                    color: #721c24;">
+        </div>
+
+        <div th:if="${mensaje}"
+             th:text="${mensaje}"
+             style="padding: 10px; margin-bottom: 15px;
+                    border-radius: 4px; background-color: #d4edda;
+                    color: #155724;">
+        </div>
+
+        <form th:action="@{/registro}" method="post">
+
+            <label for="nombre">Nombre completo</label>
+            <input type="text"
+                   id="nombre"
+                   name="nombre"
+                   placeholder="Digite su nombre"
+                   required>
+
+            <label for="usuario">Nombre de usuario</label>
+            <input type="text"
+                   id="usuario"
+                   name="usuario"
+                   placeholder="Elija un usuario"
+                   required>
+
+            <label for="contrasena">Contraseña</label>
+            <input type="password"
+                   id="contrasena"
+                   name="contrasena"
+                   placeholder="Mínimo 6 caracteres"
+                   minlength="6"
+                   required>
+
+            <button type="submit">Registrarme</button>
+
+        </form>
+
+        <a th:href="@{/login}">Ya tengo una cuenta. Iniciar sesión</a>
+
+    </section>
+
+</main>
+
+<footer>
+    <p>&copy; 2026 Arán Shop - Proyecto Académico</p>
+</footer>
+
+</body>
+</html>

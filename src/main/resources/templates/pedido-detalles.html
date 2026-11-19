@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Arán Shop - Detalles del pedido</title>
+
+    <link rel="stylesheet" th:href="@{/css/Estilos.css}">
+</head>
+<body>
+
+<header>
+    <h1>Arán Shop</h1>
+    <p>Detalle y consulta de pedidos</p>
+</header>
+
+<main class="contenedor">
+
+    <!-- INFORMACIÓN DEL PEDIDO -->
+    <section class="tarjeta">
+
+        <h2>Información del pedido</h2>
+
+        <p style="margin-top: 20px;">
+            <strong>Número de pedido:</strong>
+            <span th:text="${pedido.id}"></span>
+        </p>
+
+        <p>
+            <strong>Cliente:</strong>
+            <span th:text="${pedido.nombreCliente}"></span>
+        </p>
+
+        <p>
+            <strong>Fecha:</strong>
+            <span th:text="${pedido.fecha}"></span>
+        </p>
+
+        <p>
+            <strong>Estado:</strong>
+            <span th:text="${pedido.estado}"></span>
+        </p>
+
+    </section>
+
+    <!-- PRODUCTOS DEL PEDIDO -->
+    <section class="tarjeta">
+
+        <h2>Productos del pedido</h2>
+
+        <p style="margin-top: 10px; margin-bottom: 20px;">
+            Detalle de los productos incluidos en este pedido:
+        </p>
+
+        <table border="1"
+               style="width:100%; border-collapse: collapse; text-align: left;">
+
+            <thead>
+            <tr style="background-color: #174a5b; color: white;">
+                <th style="padding: 12px;">Producto</th>
+                <th style="padding: 12px;">Cantidad</th>
+                <th style="padding: 12px;">Precio unitario</th>
+                <th style="padding: 12px;">Subtotal</th>
+            </tr>
+            </thead>
+
+            <tbody>
+
+            <tr th:each="detalle : ${detalles}">
+
+                <td style="padding: 10px;"
+                    th:text="${detalle.producto.nombre}">
+                </td>
+
+                <td style="padding: 10px;"
+                    th:text="${detalle.cantidad}">
+                </td>
+
+                <td style="padding: 10px;"
+                    th:text="${'₡' + detalle.precio}">
+                </td>
+
+                <td style="padding: 10px;"
+                    th:text="${'₡' + detalle.subtotal}">
+                </td>
+
+            </tr>
+
+            <tr th:if="${#lists.isEmpty(detalles)}">
+                <td colspan="4"
+                    style="padding: 20px; text-align: center; color: #666;">
+                    Este pedido no tiene productos registrados en sus detalles.
+                </td>
+            </tr>
+
+            </tbody>
+
+        </table>
+
+        <h2 style="text-align: right; margin-top: 25px;">
+            Total del pedido:
+            <span style="color: #174a5b;"
+                  th:text="${'₡' + pedido.total}">
+            </span>
+        </h2>
+
+    </section>
+
+    <!-- NAVEGACIÓN -->
+    <div style="margin-top: 20px;">
+
+        <a th:href="@{/pedidos}"
+           style="display: inline-block; background-color: #174a5b; color: white; padding: 12px 20px; border-radius: 5px; text-decoration: none;">
+            ← Volver a pedidos
+        </a>
+
+    </div>
+
+</main>
+
+<footer>
+    <p>&copy; 2026 Arán Shop - Proyecto Académico</p>
+</footer>
+
+</body>
+</html>

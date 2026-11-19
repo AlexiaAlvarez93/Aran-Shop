@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Inicio de sesión</title>
+
+    <link rel="stylesheet" th:href="@{/css/Estilos.css}">
+    <link rel="stylesheet" th:href="@{/css/login.css}">
+</head>
+<body>
+
+<header>
+    <h1>Arán Shop</h1>
+    <p>Tienda en línea</p>
+</header>
+
+<main class="contenedor">
+
+    <section class="tarjeta login">
+
+        <h2>Ingresar al sistema</h2>
+
+        <!-- Mensaje de error del controlador -->
+        <div th:if="${error}"
+             th:text="${error}"
+             style="padding: 10px; margin-bottom: 15px;
+                    border-radius: 4px; background-color: #f8d7da;
+                    color: #721c24;">
+        </div>
+
+        <form id="formLogin" th:action="@{/login}" method="post">
+
+            <label for="usuario">Usuario</label>
+            <input type="text"
+                   id="usuario"
+                   name="usuario"
+                   placeholder="Digite su usuario"
+                   required>
+
+            <label for="contrasena">Contraseña</label>
+            <input type="password"
+                   id="contrasena"
+                   name="contrasena"
+                   placeholder="Digite su contraseña"
+                   required>
+
+            <button type="submit">Ingresar</button>
+
+        </form>
+
+        <a th:href="@{/}">Volver al inicio</a>
+
+    </section>
+
+</main>
+
+<footer>
+    <p>&copy; 2026 Arán Shop - Proyecto Académico</p>
+</footer>
+
+</body>
+</html>

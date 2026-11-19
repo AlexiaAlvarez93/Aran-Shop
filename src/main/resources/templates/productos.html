@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Arán Shop - Productos</title>
+
+    <link rel="stylesheet" th:href="@{/css/Estilos.css}">
+
+    <style>
+        /* BOTÓN FLOTANTE DEL CARRITO */
+        .boton-carrito-flotante {
+            position: fixed;
+            right: 25px;
+            bottom: 25px;
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            background-color: #174a5b;
+            color: white;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+
+        .contador-carrito {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: #e53935;
+            color: white;
+            border-radius: 50%;
+            min-width: 23px;
+            height: 23px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* PANEL DEL CARRITO */
+        .panel-carrito {
+            position: fixed;
+            right: 20px;
+            bottom: 105px;
+            width: min(650px, calc(100% - 40px));
+            max-height: 75vh;
+            overflow-y: auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            z-index: 999;
+        }
+
+        .encabezado-carrito {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .boton-cerrar-carrito {
+            background-color: #a83232;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        .panel-carrito table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        .panel-carrito th,
+        .panel-carrito td {
+            padding: 9px;
+        }
+
+        .panel-carrito input {
+            max-width: 75px;
+        }
+
+        @media (max-width: 600px) {
+            .panel-carrito {
+                right: 10px;
+                bottom: 90px;
+                width: calc(100% - 20px);
+                padding: 12px;
+            }
+
+            .panel-carrito table {
+                font-size: 12px;
+            }
+
+            .panel-carrito th,
+            .panel-carrito td {
+                padding: 5px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>Arán Shop</h1>
+    <p>Panel de Administración y Productos</p>
+</header>
+
+<main class="contenedor">
+
+    <!-- REGISTRAR O EDITAR PRODUCTOS -->
+    <section class="tarjeta">
+
+        <h2 th:text="${producto.id != null ? 'Editar producto' : 'Registrar producto'}">
+            Registrar producto
+        </h2>
+
+        <div th:if="${exito}"
+             th:text="${exito}"
+             style="background-color: #d4edda; color: #155724; padding: 12px; margin-bottom: 15px; border-radius: 5px;">
+        </div>
+
+        <div th:if="${error}"
+             th:text="${error}"
+             style="background-color: #f8d7da; color: #721c24; padding: 12px; margin-bottom: 15px; border-radius: 5px;">
+        </div>
+
+        <form th:action="${producto.id != null ? '/productos/actualizar' : '/productos/guardar'}"
+              method="post">
+
+            <input type="hidden" name="id" th:value="${producto.id}">
+
+            <label for="nombre">Nombre del producto</label>
+            <input type="text"
+                   id="nombre"
+                   name="nombre"
+                   th:value="${producto.nombre}"
+                   placeholder="Digite el nombre del producto"
+                   required>
+
+            <label for="precio">Precio</label>
+            <input type="number"
+                   id="precio"
+                   name="precio"
+                   th:value="${producto.precio}"
+                   step="0.01"
+                   min="0"
+                   placeholder="Digite el precio"
+                   required>
+
+            <label for="cantidad">Cantidad disponible</label>
+            <input type="number"
+                   id="cantidad"
+                   name="cantidad"
+                   th:value="${producto.cantidad}"
+                   min="0"
+                   placeholder="Digite la cantidad"
+                   required>
+
+            <label for="categoriaId">Categoría</label>
+
+            <select id="categoriaId" name="categoriaId" required>
+                <option value="">Seleccione una categoría</option>
+
+                <option th:each="cat : ${categorias}"
+                        th:value="${cat.id}"
+                        th:text="${cat.nombre}"
+                        th:selected="${producto.categoria != null and producto.categoria.id == cat.id}">
+                </option>
+            </select>
+
+            <button type="submit"
+                    th:text="${producto.id != null ? 'Actualizar producto' : 'Guardar producto'}">
+                Guardar producto
+            </button>
+
+            <a th:if="${producto.id != null}"
+               th:href="@{/productos}"
+               style="margin-left: 10px;">
+                Cancelar edición
+            </a>
+
+        </form>
+
+    </section>
+
+    <!-- LISTADO DE PRODUCTOS -->
+    <section class="tarjeta">
+
+        <h2>Listado de productos</h2>
+
+        <p style="margin-top: 10px; margin-bottom: 20px;">
+            Productos disponibles en Arán Shop:
+        </p>
+
+        <!-- BUSCADOR DE PRODUCTOS -->
+        <form th:action="@{/productos/buscar}"
+              method="get"
+              style="margin-bottom: 20px;">
+
+            <label for="buscarNombre">Buscar producto por nombre</label>
+
+            <input type="text"
+                   id="buscarNombre"
+                   name="nombre"
+                   th:value="${busqueda}"
+                   placeholder="Digite el nombre del producto">
+
+            <button type="submit">Buscar</button>
+
+            <a th:href="@{/productos}" style="margin-left: 10px;">
+                Mostrar todos
+            </a>
+
+        </form>
+
+        <table border="1"
+               style="width:100%; border-collapse: collapse; text-align: left;">
+
+            <thead>
+            <tr style="background-color: #174a5b; color: white;">
+                <th style="padding: 12px;">ID</th>
+                <th style="padding: 12px;">Nombre</th>
+                <th style="padding: 12px;">Precio</th>
+                <th style="padding: 12px;">Cantidad</th>
+                <th style="padding: 12px;">Categoría</th>
+                <th style="padding: 12px;">Acciones</th>
+                <th style="padding: 12px;">Comprar</th>
+            </tr>
+            </thead>
+
+            <tbody>
+
+            <tr th:each="prod : ${productos}">
+
+                <td style="padding: 10px;" th:text="${prod.id}"></td>
+
+                <td style="padding: 10px;" th:text="${prod.nombre}"></td>
+
+                <td style="padding: 10px;" th:text="${prod.precio}"></td>
+
+                <td style="padding: 10px;" th:text="${prod.cantidad}"></td>
+
+                <td style="padding: 10px;"
+                    th:text="${prod.categoria != null ? prod.categoria.nombre : 'Sin categoría'}">
+                </td>
+
+                <td style="padding: 10px;">
+
+                    <a th:href="@{/productos/editar/{id}(id=${prod.id})}">
+                        Editar
+                    </a>
+
+                    <form th:action="@{/productos/eliminar/{id}(id=${prod.id})}"
+                          method="post"
+                          style="display: inline;"
+                          onsubmit="return confirm('¿Está seguro de eliminar este producto?');">
+
+                        <button type="submit">Eliminar</button>
+
+                    </form>
+
+                </td>
+
+                <td style="padding: 10px;">
+
+                    <button type="button"
+                            th:disabled="${prod.cantidad <= 0}"
+                            th:attr="data-id=${prod.id},
+                                     data-nombre=${prod.nombre},
+                                     data-precio=${prod.precio},
+                                     data-stock=${prod.cantidad}"
+                            onclick="agregarAlCarrito(this)">
+                        Agregar al carrito
+                    </button>
+
+                </td>
+
+            </tr>
+
+            <tr th:if="${#lists.isEmpty(productos)}">
+                <td colspan="7"
+                    style="padding: 20px; text-align: center; color: #666;">
+                    No hay productos registrados en la base de datos.
+                </td>
+            </tr>
+
+            </tbody>
+        </table>
+
+    </section>
+
+    <!-- CARRITO FLOTANTE -->
+    <section id="panelCarrito" class="panel-carrito" style="display: none;">
+
+        <div class="encabezado-carrito">
+            <h2>🛒 Mi carrito</h2>
+
+            <button type="button"
+                    class="boton-cerrar-carrito"
+                    onclick="cerrarCarrito()">
+                ✕ Cerrar
+            </button>
+        </div>
+
+        <p style="margin-bottom: 15px;">
+            Revise los productos seleccionados antes de confirmar su compra.
+        </p>
+
+        <div id="carritoVacio"
+             style="padding: 15px; text-align: center; color: #666;">
+            El carrito está vacío.
+        </div>
+
+        <table id="tablaCarrito"
+               border="1"
+               style="width: 100%; border-collapse: collapse; text-align: left; display: none;">
+
+            <thead>
+            <tr style="background-color: #174a5b; color: white;">
+                <th>Producto</th>
+                <th>Precio</th>
+                <th>Cantidad</th>
+                <th>Subtotal</th>
+                <th>Acción</th>
+            </tr>
+            </thead>
+
+            <tbody id="contenidoCarrito">
+            </tbody>
+
+        </table>
+
+        <h3 id="totalCarrito"
+            style="text-align: right; margin-top: 20px;">
+            Total: ₡0
+        </h3>
+
+        <!-- CONFIRMAR COMPRA -->
+        <form id="formCarrito"
+              th:action="@{/pedidos/guardar}"
+              method="post"
+              style="margin-top: 20px;">
+
+            <label for="clienteCarrito">Nombre del cliente:</label>
+
+            <input type="text"
+                   id="clienteCarrito"
+                   name="nombreCliente"
+                   placeholder="Digite su nombre"
+                   required>
+
+            <div id="productosOcultos"></div>
+
+            <button type="submit"
+                    id="btnConfirmar"
+                    disabled>
+                Confirmar compra
+            </button>
+
+            <button type="button"
+                    id="btnVaciar"
+                    style="background-color: #a83232; margin-left: 10px;">
+                Vaciar carrito
+            </button>
+
+        </form>
+
+    </section>
+
+    <!-- BURBUJA DEL CARRITO -->
+    <button type="button"
+            id="botonCarritoFlotante"
+            class="boton-carrito-flotante"
+            onclick="abrirCarrito()"
+            title="Abrir carrito">
+
+        🛒
+
+        <span id="contadorCarrito" class="contador-carrito">
+            0
+        </span>
+
+    </button>
+
+    <div style="margin-top: 20px;">
+        <a th:href="@{/menu}">
+            ← Volver al menú
+        </a>
+    </div>
+
+</main>
+
+<footer>
+    <p>&copy; 2026 Arán Shop - Proyecto Académico</p>
+</footer>
+
+<!-- FUNCIONES DEL CARRITO -->
+<script>
+
+    const listaCarrito = "aranShopCarrito";
+
+    let carrito = JSON.parse(localStorage.getItem(listaCarrito) || "[]");
+
+    // ABRIR CARRITO
+    function abrirCarrito() {
+        document.getElementById("panelCarrito").style.display = "block";
+    }
+
+    // CERRAR CARRITO
+    function cerrarCarrito() {
+        document.getElementById("panelCarrito").style.display = "none";
+    }
+
+    // GUARDAR CARRITO
+    function guardarCarrito() {
+
+        localStorage.setItem(listaCarrito, JSON.stringify(carrito));
+
+        mostrarCarrito();
+    }
+
+    // AGREGAR PRODUCTO
+    function agregarAlCarrito(boton) {
+
+        const id = boton.dataset.id;
+        const nombre = boton.dataset.nombre;
+        const precio = Number(boton.dataset.precio);
+        const stock = Number(boton.dataset.stock);
+
+        const productoExistente = carrito.find(p => p.id === id);
+
+        if (productoExistente) {
+
+            productoExistente.stock = stock;
+
+            if (productoExistente.cantidad >= stock) {
+                alert("No hay más existencias disponibles de este producto.");
+                return;
+            }
+
+            productoExistente.cantidad++;
+
+        } else {
+
+            carrito.push({
+                id: id,
+                nombre: nombre,
+                precio: precio,
+                stock: stock,
+                cantidad: 1
+            });
+
+        }
+
+        guardarCarrito();
+
+        alert(nombre + " agregado al carrito.");
+    }
+
+    // MOSTRAR CARRITO
+    function mostrarCarrito() {
+
+        const contenido = document.getElementById("contenidoCarrito");
+        const tabla = document.getElementById("tablaCarrito");
+        const vacio = document.getElementById("carritoVacio");
+        const totalTexto = document.getElementById("totalCarrito");
+        const productosOcultos = document.getElementById("productosOcultos");
+        const btnConfirmar = document.getElementById("btnConfirmar");
+        const contador = document.getElementById("contadorCarrito");
+
+        contenido.innerHTML = "";
+        productosOcultos.innerHTML = "";
+
+        let total = 0;
+        let cantidadTotal = 0;
+
+        if (carrito.length === 0) {
+
+            tabla.style.display = "none";
+            vacio.style.display = "block";
+            btnConfirmar.disabled = true;
+
+        } else {
+
+            tabla.style.display = "table";
+            vacio.style.display = "none";
+            btnConfirmar.disabled = false;
+
+        }
+
+        carrito.forEach((producto, indice) => {
+
+            const subtotal = producto.precio * producto.cantidad;
+
+            total += subtotal;
+            cantidadTotal += producto.cantidad;
+
+            const fila = document.createElement("tr");
+
+            const celdaNombre = document.createElement("td");
+            celdaNombre.textContent = producto.nombre;
+
+            const celdaPrecio = document.createElement("td");
+            celdaPrecio.textContent = "₡" + producto.precio.toLocaleString("es-CR");
+
+            const celdaCantidad = document.createElement("td");
+
+            const cantidadInput = document.createElement("input");
+            cantidadInput.type = "number";
+            cantidadInput.min = "1";
+            cantidadInput.max = producto.stock;
+            cantidadInput.value = producto.cantidad;
+            cantidadInput.style.width = "75px";
+
+            cantidadInput.addEventListener("change", function () {
+
+                let nuevaCantidad = parseInt(this.value);
+
+                if (isNaN(nuevaCantidad) || nuevaCantidad < 1) {
+                    nuevaCantidad = 1;
+                }
+
+                if (nuevaCantidad > producto.stock) {
+                    alert("La cantidad supera las existencias disponibles.");
+                    nuevaCantidad = producto.stock;
+                }
+
+                producto.cantidad = nuevaCantidad;
+
+                guardarCarrito();
+
+            });
+
+            celdaCantidad.appendChild(cantidadInput);
+
+            const celdaSubtotal = document.createElement("td");
+            celdaSubtotal.textContent = "₡" + subtotal.toLocaleString("es-CR");
+
+            const celdaAccion = document.createElement("td");
+
+            const botonEliminar = document.createElement("button");
+            botonEliminar.type = "button";
+            botonEliminar.textContent = "Eliminar";
+            botonEliminar.style.backgroundColor = "#a83232";
+
+            botonEliminar.addEventListener("click", function () {
+
+                carrito.splice(indice, 1);
+
+                guardarCarrito();
+
+            });
+
+            celdaAccion.appendChild(botonEliminar);
+
+            fila.appendChild(celdaNombre);
+            fila.appendChild(celdaPrecio);
+            fila.appendChild(celdaCantidad);
+            fila.appendChild(celdaSubtotal);
+            fila.appendChild(celdaAccion);
+
+            contenido.appendChild(fila);
+
+            // DATOS QUE RECIBIRÁ EL CONTROLADOR
+            const inputProducto = document.createElement("input");
+            inputProducto.type = "hidden";
+            inputProducto.name = "productoIds";
+            inputProducto.value = producto.id;
+
+            const inputCantidad = document.createElement("input");
+            inputCantidad.type = "hidden";
+            inputCantidad.name = "cantidades";
+            inputCantidad.value = producto.cantidad;
+
+            productosOcultos.appendChild(inputProducto);
+            productosOcultos.appendChild(inputCantidad);
+
+        });
+
+        totalTexto.textContent = "Total: ₡" + total.toLocaleString("es-CR");
+
+        contador.textContent = cantidadTotal;
+
+    }
+
+    // VACIAR CARRITO
+    document.getElementById("btnVaciar").addEventListener("click", function () {
+
+        if (carrito.length > 0) {
+
+            if (confirm("¿Desea vaciar el carrito de compras?")) {
+
+                carrito = [];
+
+                guardarCarrito();
+
+            }
+
+        }
+
+    });
+
+    // CONFIRMAR COMPRA
+    document.getElementById("formCarrito").addEventListener("submit", function (evento) {
+
+        if (carrito.length === 0) {
+
+            evento.preventDefault();
+
+            alert("Debe agregar al menos un producto al carrito.");
+
+            return;
+        }
+
+        if (!document.getElementById("clienteCarrito").value.trim()) {
+
+            evento.preventDefault();
+
+            alert("Digite el nombre del cliente.");
+
+            return;
+        }
+
+        if (!confirm("¿Desea confirmar esta compra?")) {
+
+            evento.preventDefault();
+
+            return;
+        }
+
+        localStorage.removeItem(listaCarrito);
+
+    });
+
+    // CARGAR CARRITO AL ABRIR LA PÁGINA
+    mostrarCarrito();
+
+</script>
+
+</body>
+</html>

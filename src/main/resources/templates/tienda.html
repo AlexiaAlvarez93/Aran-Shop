@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Tienda - Arán Shop</title>
+
+    <link rel="stylesheet" th:href="@{/css/Estilos.css}">
+</head>
+<body>
+
+<header>
+    <h1>Arán Shop</h1>
+    <p>Tienda en línea</p>
+</header>
+
+<main class="contenedor">
+
+    <section class="tarjeta tienda-principal">
+
+        <div class="bienvenida">
+            <h2>¡Bienvenido a Arán Shop!</h2>
+            <p>
+                Hola,
+                <strong th:text="${session.nombreUsuario}"></strong>.
+            </p>
+            <p>Encuentra los productos que necesitas.</p>
+        </div>
+
+        <div th:if="${exito}" class="mensaje-alerta mensaje-exito">
+            <strong>¡Compra realizada!</strong>
+            <span th:text="${exito}"></span>
+        </div>
+
+        <div th:if="${error}" class="mensaje-alerta mensaje-error">
+            <strong>Atención</strong>
+            <span th:text="${error}"></span>
+        </div>
+
+        <div class="catalogo-encabezado">
+            <h2>Nuestro catálogo</h2>
+            <p>Selecciona tus productos y agrégalos al carrito.</p>
+        </div>
+
+        <div th:if="${#lists.isEmpty(productos)}" class="mensaje-vacio">
+            <p>Actualmente no hay productos disponibles.</p>
+        </div>
+
+        <div class="catalogo-productos">
+
+            <article class="producto-card"
+                     th:each="producto : ${productos}">
+
+                <div class="producto-icono">🛍️</div>
+
+                <h3 th:text="${producto.nombre}"></h3>
+
+                <p class="producto-precio">
+                    ₡<span th:text="${producto.precio}"></span>
+                </p>
+
+                <p class="producto-existencia">
+                    Existencias:
+                    <strong th:text="${producto.cantidad}"></strong>
+                </p>
+
+                <span th:if="${producto.cantidad > 0}"
+                      class="estado-producto disponible">
+                    Disponible
+                </span>
+
+                <span th:if="${producto.cantidad <= 0}"
+                      class="estado-producto agotado">
+                    Agotado
+                </span>
+
+                <div class="producto-acciones"
+                     th:if="${producto.cantidad > 0}">
+
+                    <label>Cantidad:</label>
+
+                    <input type="number"
+                           class="cantidad-producto"
+                           min="1"
+                           value="1"
+                           th:attr="max=${producto.cantidad}">
+
+                    <button type="button"
+                            class="boton-agregar"
+                            onclick="agregarAlCarrito(this)"
+                            th:attr="data-id=${producto.id},
+                                     data-nombre=${producto.nombre},
+                                     data-precio=${producto.precio},
+                                     data-stock=${producto.cantidad}">
+                        Agregar al carrito
+                    </button>
+
+                </div>
+
+                <div th:if="${producto.cantidad <= 0}"
+                     class="producto-sin-stock">
+                    Producto no disponible
+                </div>
+
+            </article>
+
+        </div>
+
+        <div class="enlaces-cliente">
+            <a th:href="@{/mis-pedidos}" class="enlace-pedidos">
+                📦 Mis pedidos
+            </a>
+
+            <a th:href="@{/logout}" class="enlace-salir">
+                Cerrar sesión
+            </a>
+        </div>
+
+    </section>
+
+</main>
+
+<!-- BURBUJA FLOTANTE DEL CARRITO -->
+
+<button type="button"
+        id="botonCarrito"
+        class="burbuja-carrito"
+        onclick="alternarCarrito()"
+        aria-label="Abrir carrito"
+        aria-expanded="false">
+
+    🛒
+    <span id="contadorCarrito" class="contador-carrito">0</span>
+
+</button>
+
+<!-- PANEL DEL CARRITO -->
+
+<div id="panelCarrito" class="panel-carrito" hidden>
+
+    <div class="encabezado-carrito">
+        <h2>Mi carrito</h2>
+
+        <button type="button"
+                class="cerrar-carrito"
+                onclick="alternarCarrito()"
+                aria-label="Cerrar carrito">
+            ×
+        </button>
+    </div>
+
+    <div id="carritoVacio" class="carrito-vacio">
+        <p>🛒 Tu carrito está vacío.</p>
+        <p>Agrega productos para comenzar tu compra.</p>
+    </div>
+
+    <div id="contenidoCarrito" hidden>
+
+        <div id="listaCarrito"></div>
+
+        <div class="total-carrito">
+            <span>Total de la compra:</span>
+            <strong>₡<span id="totalCarrito">0.00</span></strong>
+        </div>
+
+        <form id="formularioCompra"
+              th:action="@{/tienda/comprar}"
+              method="post">
+
+            <div id="datosCompra"></div>
+
+            <button type="submit" class="boton-confirmar">
+                Confirmar compra
+            </button>
+
+        </form>
+
+        <button type="button"
+                class="boton-vaciar"
+                onclick="vaciarCarrito()">
+            Vaciar carrito
+        </button>
+
+    </div>
+
+</div>
+
+<footer>
+    <p>&copy; 2026 Arán Shop - Proyecto Académico</p>
+</footer>
+
+<script>
+
+    let carrito = [];
+
+    function agregarAlCarrito(boton) {
+
+        const tarjeta = boton.closest(".producto-card");
+        const cantidadInput = tarjeta.querySelector(".cantidad-producto");
+
+        const id = Number(boton.dataset.id);
+        const nombre = boton.dataset.nombre;
+        const precio = Number(boton.dataset.precio);
+        const stock = Number(boton.dataset.stock);
+        const cantidad = Number(cantidadInput.value);
+
+        if (!Number.isInteger(cantidad) || cantidad <= 0) {
+            alert("Ingrese una cantidad válida.");
+            return;
+        }
+
+        if (cantidad > stock) {
+            alert("No hay suficiente inventario disponible.");
+            return;
+        }
+
+        const existente = carrito.find(producto => producto.id === id);
+
+        if (existente) {
+
+            if (existente.cantidad + cantidad > stock) {
+                alert("La cantidad supera el inventario disponible.");
+                return;
+            }
+
+            existente.cantidad += cantidad;
+
+        } else {
+
+            carrito.push({
+                id: id,
+                nombre: nombre,
+                precio: precio,
+                cantidad: cantidad,
+                stock: stock
+            });
+
+        }
+
+        cantidadInput.value = 1;
+
+        mostrarCarrito();
+
+    }
+
+    function alternarCarrito() {
+
+        const panel = document.getElementById("panelCarrito");
+        const boton = document.getElementById("botonCarrito");
+
+        panel.hidden = !panel.hidden;
+
+        boton.setAttribute("aria-expanded", !panel.hidden);
+
+    }
+
+    function mostrarCarrito() {
+
+        const lista = document.getElementById("listaCarrito");
+        const datos = document.getElementById("datosCompra");
+        const carritoVacio = document.getElementById("carritoVacio");
+        const contenido = document.getElementById("contenidoCarrito");
+
+        lista.innerHTML = "";
+        datos.innerHTML = "";
+
+        let total = 0;
+        let cantidadTotal = 0;
+
+        if (carrito.length === 0) {
+
+            carritoVacio.hidden = false;
+            contenido.hidden = true;
+
+            document.getElementById("contadorCarrito").textContent = "0";
+            document.getElementById("totalCarrito").textContent = "0.00";
+
+            return;
+
+        }
+
+        carritoVacio.hidden = true;
+        contenido.hidden = false;
+
+        carrito.forEach((producto, indice) => {
+
+            const subtotal = producto.precio * producto.cantidad;
+
+            total += subtotal;
+            cantidadTotal += producto.cantidad;
+
+            const elemento = document.createElement("div");
+            elemento.className = "producto-carrito";
+
+            const nombre = document.createElement("strong");
+            nombre.textContent = producto.nombre;
+
+            const precio = document.createElement("p");
+            precio.textContent = "Precio: ₡" + producto.precio.toFixed(2);
+
+            const cantidad = document.createElement("p");
+            cantidad.textContent = "Cantidad: " + producto.cantidad;
+
+            const subtotalTexto = document.createElement("p");
+            subtotalTexto.textContent = "Subtotal: ₡" + subtotal.toFixed(2);
+
+            const eliminar = document.createElement("button");
+            eliminar.type = "button";
+            eliminar.className = "boton-eliminar";
+            eliminar.textContent = "Eliminar";
+            eliminar.onclick = function () {
+                eliminarProducto(indice);
+            };
+
+            elemento.appendChild(nombre);
+            elemento.appendChild(precio);
+            elemento.appendChild(cantidad);
+            elemento.appendChild(subtotalTexto);
+            elemento.appendChild(eliminar);
+
+            lista.appendChild(elemento);
+
+            const campoProducto = document.createElement("input");
+            campoProducto.type = "hidden";
+            campoProducto.name = "productoIds";
+            campoProducto.value = producto.id;
+
+            const campoCantidad = document.createElement("input");
+            campoCantidad.type = "hidden";
+            campoCantidad.name = "cantidades";
+            campoCantidad.value = producto.cantidad;
+
+            datos.appendChild(campoProducto);
+            datos.appendChild(campoCantidad);
+
+        });
+
+        document.getElementById("totalCarrito").textContent = total.toFixed(2);
+        document.getElementById("contadorCarrito").textContent = cantidadTotal;
+
+    }
+
+    function eliminarProducto(indice) {
+
+        carrito.splice(indice, 1);
+
+        mostrarCarrito();
+
+    }
+
+    function vaciarCarrito() {
+
+        carrito = [];
+
+        mostrarCarrito();
+
+    }
+
+    document.getElementById("formularioCompra").addEventListener("submit", function(event) {
+
+        if (carrito.length === 0) {
+
+            event.preventDefault();
+
+            alert("Agregue al menos un producto al carrito.");
+
+        }
+
+    });
+
+</script>
+
+</body>
+</html>

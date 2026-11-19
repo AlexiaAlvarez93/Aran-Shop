@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arán Shop - Panel principal</title>
+    <link rel="stylesheet" th:href="@{/css/Estilos.css}">
+
+    <style>
+        .boton-carrito-flotante {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            background-color: #174a5b;
+            color: white;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .contador-carrito {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: #d93636;
+            color: white;
+            border-radius: 50%;
+            min-width: 23px;
+            height: 23px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .panel-carrito {
+            display: none;
+            position: fixed;
+            bottom: 105px;
+            right: 25px;
+            width: 360px;
+            max-width: calc(100% - 30px);
+            max-height: 70vh;
+            overflow-y: auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.3);
+            z-index: 1001;
+        }
+
+        .encabezado-carrito {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .cerrar-carrito {
+            background-color: #a83232;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 7px 12px;
+            cursor: pointer;
+        }
+
+        .producto-carrito {
+            border-bottom: 1px solid #ddd;
+            padding: 12px 0;
+        }
+
+        .producto-carrito input {
+            width: 65px;
+            margin: 5px;
+        }
+
+        .boton-eliminar-carrito {
+            background-color: #a83232;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .boton-vaciar-carrito {
+            background-color: #a83232;
+            margin-left: 5px;
+        }
+
+        @media (max-width: 480px) {
+            .panel-carrito {
+                right: 15px;
+                bottom: 95px;
+                width: calc(100% - 70px);
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Arán Shop</h1>
+    <p>Panel de administración</p>
+</header>
+
+<main class="contenedor">
+
+    <section class="bienvenida">
+        <h2>¡Bienvenido a Arán Shop!</h2>
+        <p>Selecciona la sección que deseas administrar.</p>
+    </section>
+
+    <section class="menu-tarjetas">
+
+        <a th:href="@{/productos}" class="tarjeta-menu">
+            <div class="icono-tarjeta">📦</div>
+            <h2>Productos</h2>
+            <p>Registrar, consultar y administrar productos.</p>
+            <span>Ingresar →</span>
+        </a>
+
+        <a th:href="@{/categorias}" class="tarjeta-menu">
+            <div class="icono-tarjeta">🗂️</div>
+            <h2>Categorías</h2>
+            <p>Organizar y administrar las categorías.</p>
+            <span>Ingresar →</span>
+        </a>
+
+        <a th:href="@{/pedidos}" class="tarjeta-menu">
+            <div class="icono-tarjeta">🛒</div>
+            <h2>Pedidos</h2>
+            <p>Consultar pedidos y administrar sus estados.</p>
+            <span>Ingresar →</span>
+        </a>
+
+    </section>
+
+    <div class="cerrar-sesion">
+        <form th:action="@{/logout}" method="get">
+            <button type="submit">Cerrar sesión</button>
+        </form>
+    </div>
+
+</main>
+
+<!-- BOTÓN FLOTANTE DEL CARRITO -->
+<button type="button" class="boton-carrito-flotante"
+        onclick="abrirCarrito()">
+    🛒
+    <span id="contadorCarrito" class="contador-carrito">0</span>
+</button>
+
+<!-- PANEL DEL CARRITO -->
+<div id="panelCarrito" class="panel-carrito">
+
+    <div class="encabezado-carrito">
+        <h2>Mi carrito</h2>
+        <button type="button" class="cerrar-carrito"
+                onclick="cerrarCarrito()">✕</button>
+    </div>
+
+    <div id="carritoVacio" style="text-align:center; padding:15px;">
+        El carrito está vacío.
+    </div>
+
+    <div id="contenidoCarrito"></div>
+
+    <h3 id="totalCarrito" style="text-align:right; margin-top:15px;">
+        Total: ₡0
+    </h3>
+
+    <form id="formCarrito"
+          th:action="@{/pedidos/guardar}"
+          method="post">
+
+        <label for="clienteCarrito">Nombre del cliente:</label>
+
+        <input type="text"
+               id="clienteCarrito"
+               name="nombreCliente"
+               placeholder="Digite su nombre"
+               required>
+
+        <div id="productosOcultos"></div>
+
+        <button type="submit" id="btnConfirmar" disabled>
+            Confirmar compra
+        </button>
+
+        <button type="button"
+                id="btnVaciar"
+                class="boton-vaciar-carrito">
+            Vaciar carrito
+        </button>
+
+    </form>
+
+</div>
+
+<footer>
+    <p>&copy; 2026 Arán Shop - Proyecto Académico</p>
+</footer>
+
+<script>
+
+    const listaCarrito = "aranShopCarrito";
+
+    let carrito = JSON.parse(localStorage.getItem(listaCarrito) || "[]");
+
+    function guardarCarrito() {
+        localStorage.setItem(listaCarrito, JSON.stringify(carrito));
+        mostrarCarrito();
+    }
+
+    function abrirCarrito() {
+        document.getElementById("panelCarrito").style.display = "block";
+        mostrarCarrito();
+    }
+
+    function cerrarCarrito() {
+        document.getElementById("panelCarrito").style.display = "none";
+    }
+
+    function mostrarCarrito() {
+
+        const contenido = document.getElementById("contenidoCarrito");
+        const vacio = document.getElementById("carritoVacio");
+        const totalTexto = document.getElementById("totalCarrito");
+        const productosOcultos = document.getElementById("productosOcultos");
+        const btnConfirmar = document.getElementById("btnConfirmar");
+        const contador = document.getElementById("contadorCarrito");
+
+        contenido.innerHTML = "";
+        productosOcultos.innerHTML = "";
+
+        let total = 0;
+        let cantidadTotal = 0;
+
+        carrito.forEach((producto, indice) => {
+
+            cantidadTotal += producto.cantidad;
+
+            const subtotal = producto.precio * producto.cantidad;
+            total += subtotal;
+
+            const articulo = document.createElement("div");
+            articulo.className = "producto-carrito";
+
+            const nombre = document.createElement("strong");
+            nombre.textContent = producto.nombre;
+
+            const precio = document.createElement("p");
+            precio.textContent = "Precio: ₡" +
+                producto.precio.toLocaleString("es-CR");
+
+            const cantidad = document.createElement("label");
+            cantidad.textContent = "Cantidad: ";
+
+            const inputCantidad = document.createElement("input");
+            inputCantidad.type = "number";
+            inputCantidad.min = "1";
+            inputCantidad.max = producto.stock;
+            inputCantidad.value = producto.cantidad;
+
+            inputCantidad.addEventListener("change", function() {
+
+                let nuevaCantidad = parseInt(this.value);
+
+                if (isNaN(nuevaCantidad) || nuevaCantidad < 1) {
+                    nuevaCantidad = 1;
+                }
+
+                if (nuevaCantidad > producto.stock) {
+                    alert("La cantidad supera las existencias disponibles.");
+                    nuevaCantidad = producto.stock;
+                }
+
+                producto.cantidad = nuevaCantidad;
+                guardarCarrito();
+
+            });
+
+            cantidad.appendChild(inputCantidad);
+
+            const subtotalTexto = document.createElement("p");
+            subtotalTexto.textContent = "Subtotal: ₡" +
+                subtotal.toLocaleString("es-CR");
+
+            const botonEliminar = document.createElement("button");
+            botonEliminar.type = "button";
+            botonEliminar.textContent = "Eliminar";
+            botonEliminar.className = "boton-eliminar-carrito";
+
+            botonEliminar.addEventListener("click", function() {
+                carrito.splice(indice, 1);
+                guardarCarrito();
+            });
+
+            articulo.appendChild(nombre);
+            articulo.appendChild(precio);
+            articulo.appendChild(cantidad);
+            articulo.appendChild(subtotalTexto);
+            articulo.appendChild(botonEliminar);
+
+            contenido.appendChild(articulo);
+
+            const inputProducto = document.createElement("input");
+            inputProducto.type = "hidden";
+            inputProducto.name = "productoIds";
+            inputProducto.value = producto.id;
+
+            const inputCantidadOculta = document.createElement("input");
+            inputCantidadOculta.type = "hidden";
+            inputCantidadOculta.name = "cantidades";
+            inputCantidadOculta.value = producto.cantidad;
+
+            productosOcultos.appendChild(inputProducto);
+            productosOcultos.appendChild(inputCantidadOculta);
+
+        });
+
+        contador.textContent = cantidadTotal;
+
+        if (carrito.length === 0) {
+            vacio.style.display = "block";
+            btnConfirmar.disabled = true;
+        } else {
+            vacio.style.display = "none";
+            btnConfirmar.disabled = false;
+        }
+
+        totalTexto.textContent = "Total: ₡" +
+            total.toLocaleString("es-CR");
+
+    }
+
+    document.getElementById("btnVaciar").addEventListener("click", function() {
+
+        if (carrito.length > 0) {
+
+            if (confirm("¿Desea vaciar el carrito de compras?")) {
+
+                carrito = [];
+                guardarCarrito();
+
+            }
+
+        }
+
+    });
+
+    document.getElementById("formCarrito").addEventListener("submit", function(evento) {
+
+        if (carrito.length === 0) {
+            evento.preventDefault();
+            alert("Debe agregar al menos un producto al carrito.");
+            return;
+        }
+
+        if (!document.getElementById("clienteCarrito").value.trim()) {
+            evento.preventDefault();
+            alert("Digite el nombre del cliente.");
+            return;
+        }
+
+        if (!confirm("¿Desea confirmar esta compra?")) {
+            evento.preventDefault();
+            return;
+        }
+
+        localStorage.removeItem(listaCarrito);
+
+    });
+
+    mostrarCarrito();
+
+</script>
+
+</body>
+</html>

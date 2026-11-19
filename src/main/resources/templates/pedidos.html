@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arán Shop - Pedidos</title>
+    <link rel="stylesheet" th:href="@{/css/Estilos.css}">
+</head>
+<body>
+
+<header>
+    <h1>Arán Shop</h1>
+    <p>Panel de Administración de Pedidos</p>
+</header>
+
+<main class="contenedor">
+
+    <!-- MENSAJES DEL SISTEMA -->
+    <section class="tarjeta mensajes-pedidos">
+
+        <div th:if="${exito}" class="mensaje-alerta mensaje-exito"
+             th:text="${exito}"></div>
+
+        <div th:if="${error}" class="mensaje-alerta mensaje-error"
+             th:text="${error}"></div>
+
+    </section>
+
+    <!-- TARJETA PARA REGISTRAR PEDIDOS -->
+    <section class="tarjeta formulario-pedidos">
+
+        <div class="encabezado-seccion">
+            <h2>Registrar nuevo pedido</h2>
+            <p>Complete los datos del cliente y agregue los productos.</p>
+        </div>
+
+        <form th:action="@{/pedidos/guardar}" method="post">
+
+            <label for="nombreCliente">Nombre del cliente:</label>
+
+            <input type="text"
+                   id="nombreCliente"
+                   name="nombreCliente"
+                   placeholder="Digite el nombre del cliente"
+                   required>
+
+            <h3 class="subtitulo-pedido">Productos del pedido</h3>
+
+            <div id="listaProductos">
+
+                <div class="producto-pedido">
+
+                    <label>Seleccionar producto:</label>
+
+                    <select name="productoIds" required>
+                        <option value="">Seleccione un producto</option>
+
+                        <option th:each="producto : ${productos}"
+                                th:value="${producto.id}"
+                                th:text="${producto.nombre + ' - ₡' + producto.precio + ' (Existencias: ' + producto.cantidad + ')'}">
+                        </option>
+                    </select>
+
+                    <label>Cantidad:</label>
+
+                    <input type="number"
+                           name="cantidades"
+                           min="1"
+                           placeholder="Digite la cantidad"
+                           required>
+
+                    <button type="button" class="btnEliminarProducto">
+                        Quitar producto
+                    </button>
+
+                </div>
+
+            </div>
+
+            <button type="button" id="btnAgregarProducto"
+                    class="boton-agregar-linea">
+                + Agregar otro producto
+            </button>
+
+            <button type="submit" class="boton-registrar-pedido">
+                Registrar pedido
+            </button>
+
+        </form>
+
+    </section>
+
+    <!-- TARJETA DE LA LISTA DE PEDIDOS -->
+    <section class="tarjeta listado-pedidos">
+
+        <div class="encabezado-seccion">
+            <h2>Lista de pedidos</h2>
+            <p>Pedidos registrados en Arán Shop.</p>
+        </div>
+
+        <!-- FILTROS DE BÚSQUEDA -->
+        <form th:action="@{/pedidos/buscar}"
+              method="get"
+              class="filtros-pedidos">
+
+            <div>
+                <label for="filtroNombre">Buscar por cliente:</label>
+
+                <input type="text"
+                       id="filtroNombre"
+                       name="nombreCliente"
+                       th:value="${filtroNombre}"
+                       placeholder="Digite el nombre del cliente">
+            </div>
+
+            <div>
+                <label for="filtroEstado">Filtrar por estado:</label>
+
+                <select id="filtroEstado" name="estado">
+
+                    <option value="">Todos los estados</option>
+
+                    <option value="Pendiente"
+                            th:selected="${filtroEstado == 'Pendiente'}">
+                        Pendiente
+                    </option>
+
+                    <option value="En preparación"
+                            th:selected="${filtroEstado == 'En preparación'}">
+                        En preparación
+                    </option>
+
+                    <option value="Entregado"
+                            th:selected="${filtroEstado == 'Entregado'}">
+                        Entregado
+                    </option>
+
+                </select>
+            </div>
+
+            <div class="botones-filtro">
+                <button type="submit">Buscar pedidos</button>
+
+                <a th:href="@{/pedidos}" class="boton-mostrar-todos">
+                    Mostrar todos
+                </a>
+            </div>
+
+        </form>
+
+        <!-- TARJETAS INDIVIDUALES DE PEDIDOS -->
+        <div class="contenedor-tarjetas-pedidos">
+
+            <article class="pedido-card" th:each="pedido : ${pedidos}">
+
+                <div class="pedido-card-encabezado">
+                    <h3>
+                        Pedido #<span th:text="${pedido.id}"></span>
+                    </h3>
+
+                    <span class="estado-pedido"
+                          th:classappend="${pedido.estado == 'Entregado'} ? ' estado-entregado' : (${pedido.estado == 'En preparación'} ? ' estado-preparacion' : ' estado-pendiente')"
+                          th:text="${pedido.estado}">
+                    </span>
+                </div>
+
+                <div class="pedido-card-datos">
+
+                    <p>
+                        <strong>Cliente:</strong>
+                        <span th:text="${pedido.nombreCliente}"></span>
+                    </p>
+
+                    <p>
+                        <strong>Fecha:</strong>
+                        <span th:text="${pedido.fecha}"></span>
+                    </p>
+
+                    <p class="pedido-total">
+                        <strong>Total:</strong>
+                        <span th:text="${'₡' + pedido.total}"></span>
+                    </p>
+
+                </div>
+
+                <div class="pedido-card-acciones">
+
+                    <a th:href="@{/pedidos/detalles/{id}(id=${pedido.id})}"
+                       class="boton-detalles">
+                        Ver detalles
+                    </a>
+
+                    <form th:action="@{/pedidos/actualizarEstado}"
+                          method="post"
+                          class="formulario-estado">
+
+                        <input type="hidden"
+                               name="id"
+                               th:value="${pedido.id}">
+
+                        <label>Actualizar estado:</label>
+
+                        <select name="estado" required>
+
+                            <option value="Pendiente"
+                                    th:selected="${pedido.estado == 'Pendiente'}">
+                                Pendiente
+                            </option>
+
+                            <option value="En preparación"
+                                    th:selected="${pedido.estado == 'En preparación'}">
+                                En preparación
+                            </option>
+
+                            <option value="Entregado"
+                                    th:selected="${pedido.estado == 'Entregado'}">
+                                Entregado
+                            </option>
+
+                        </select>
+
+                        <button type="submit" class="boton-actualizar-estado">
+                            Actualizar
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </article>
+
+            <div th:if="${#lists.isEmpty(pedidos)}"
+                 class="mensaje-vacio">
+
+                <p>No se encontraron pedidos con los criterios de búsqueda.</p>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <div class="volver-menu">
+        <a th:href="@{/menu}">← Volver al menú</a>
+    </div>
+
+</main>
+
+<footer>
+    <p>&copy; 2026 Arán Shop - Proyecto Académico</p>
+</footer>
+
+<script>
+
+    const listaProductos = document.getElementById("listaProductos");
+    const btnAgregarProducto = document.getElementById("btnAgregarProducto");
+
+    // AGREGAR OTRO PRODUCTO
+    btnAgregarProducto.addEventListener("click", function () {
+
+        const primerProducto = listaProductos.querySelector(".producto-pedido");
+
+        const nuevoProducto = primerProducto.cloneNode(true);
+
+        nuevoProducto.querySelector("select").value = "";
+        nuevoProducto.querySelector("input").value = "";
+
+        listaProductos.appendChild(nuevoProducto);
+
+    });
+
+    // QUITAR PRODUCTO
+    listaProductos.addEventListener("click", function (evento) {
+
+        if (evento.target.classList.contains("btnEliminarProducto")) {
+
+            const productos = listaProductos.querySelectorAll(".producto-pedido");
+
+            if (productos.length > 1) {
+
+                evento.target.closest(".producto-pedido").remove();
+
+            } else {
+
+                alert("Debe mantener al menos un producto en el pedido.");
+
+            }
+
+        }
+
+    });
+
+</script>
+
+</body>
+</html>

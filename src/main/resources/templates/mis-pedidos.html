@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Mis pedidos - Arán Shop</title>
+
+    <link rel="stylesheet" th:href="@{/css/Estilos.css}">
+
+    <style>
+        .tabla-pedidos {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            table-layout: fixed;
+        }
+
+        .tabla-pedidos th,
+        .tabla-pedidos td {
+            padding: 14px 8px;
+            text-align: center;
+            border: 1px solid #ddd;
+            vertical-align: middle;
+            overflow-wrap: break-word;
+        }
+
+        .tabla-pedidos th {
+            background-color: #eeeeee;
+        }
+
+        .tabla-pedidos tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .tabla-contenedor {
+            width: 100%;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>Arán Shop</h1>
+    <p>Mis pedidos</p>
+</header>
+
+<main class="contenedor">
+
+    <section class="tarjeta">
+
+        <h2>Mis compras</h2>
+
+        <p>
+            Hola,
+            <strong th:text="${session.nombreUsuario}"></strong>.
+        </p>
+
+        <div th:if="${#lists.isEmpty(pedidos)}">
+            <p>Todavía no has realizado ninguna compra.</p>
+        </div>
+
+        <div th:unless="${#lists.isEmpty(pedidos)}">
+
+            <div class="tabla-contenedor">
+
+                <table class="tabla-pedidos">
+
+                    <thead>
+                    <tr>
+                        <th>Número</th>
+                        <th>Fecha</th>
+                        <th>Total</th>
+                        <th>Estado</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+
+                    <tr th:each="pedido : ${pedidos}">
+
+                        <td th:text="${pedido.id}"></td>
+
+                        <td th:text="${#temporals.format(pedido.fecha, 'dd/MM/yyyy HH:mm')}"></td>
+
+                        <td>
+                            ₡<span th:text="${pedido.total}"></span>
+                        </td>
+
+                        <td th:text="${pedido.estado}"></td>
+
+                    </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+        <br>
+
+        <a th:href="@{/tienda}">Volver a la tienda</a>
+
+        <br><br>
+
+        <a th:href="@{/logout}">Cerrar sesión</a>
+
+    </section>
+
+</main>
+
+<footer>
+    <p>&copy; 2026 Arán Shop - Proyecto Académico</p>
+</footer>
+
+</body>
+</html>
