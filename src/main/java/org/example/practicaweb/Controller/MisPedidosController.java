@@ -10,7 +10,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Controller
 public class MisPedidosController {
@@ -25,17 +24,14 @@ public class MisPedidosController {
     public String mostrarMisPedidos(HttpSession session, Model model) {
 
         String rol = (String) session.getAttribute("rol");
-        String nombreCliente = (String) session.getAttribute("nombreUsuario");
+        Long usuarioId = (Long) session.getAttribute("usuarioId");
 
-        if (!"CLIENTE".equals(rol) || nombreCliente == null) {
+        if (!"CLIENTE".equals(rol) || usuarioId == null) {
             return "redirect:/login";
         }
 
-        List<Pedido> pedidos = pedidoRepository.findAll()
-                .stream()
-                .filter(p -> p.getNombreCliente() != null
-                        && p.getNombreCliente().equals(nombreCliente))
-                .collect(Collectors.toList());
+        List<Pedido> pedidos =
+                pedidoRepository.findByUsuario_Id(usuarioId);
 
         model.addAttribute("pedidos", pedidos);
 

@@ -20,6 +20,10 @@ public class Pedido {
 
     private BigDecimal total;
 
+    @ManyToOne
+    @JoinColumn(name = "usuario_id", nullable = true)
+    private Usuario usuario;
+
     public Pedido() {
     }
 
@@ -69,5 +73,13 @@ public class Pedido {
 
     public void setTotal(BigDecimal total) {
         this.total = total;
+    }
+
+    public Usuario getUsuario() {
+        return usuario;
+    }
+
+    public void setUsuario(Usuario usuario) {
+        this.usuario = usuario;
     }
 }

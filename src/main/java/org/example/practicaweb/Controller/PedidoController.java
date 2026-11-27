@@ -3,10 +3,12 @@ package org.example.practicaweb.Controller;
 import org.example.practicaweb.model.Pedido;
 import org.example.practicaweb.model.Producto;
 import org.example.practicaweb.model.DetallePedido;
+import org.example.practicaweb.model.Usuario;
 
 import org.example.practicaweb.repository.PedidoRepository;
 import org.example.practicaweb.repository.ProductoRepository;
 import org.example.practicaweb.repository.DetallePedidoRepository;
+import org.example.practicaweb.repository.UsuarioRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -36,6 +38,9 @@ public class PedidoController {
 
     @Autowired
     private DetallePedidoRepository detallePedidoRepository;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     // VERIFICAR QUE EL USUARIO SEA ADMINISTRADOR
     private boolean esAdministrador(HttpSession session) {
@@ -264,11 +269,11 @@ public class PedidoController {
             HttpSession session,
             RedirectAttributes redirectAttributes) {
 
-        // VERIFICAR QUE EL CLIENTE HAYA INICIADO SESIÓN
         String rol = (String) session.getAttribute("rol");
         String nombreCliente = (String) session.getAttribute("nombreUsuario");
+        Long usuarioId = (Long) session.getAttribute("usuarioId");
 
-        if (!"CLIENTE".equals(rol) || nombreCliente == null) {
+        if (!"CLIENTE".equals(rol) || nombreCliente == null || usuarioId == null) {
 
             redirectAttributes.addFlashAttribute(
                     "error", "Debe iniciar sesión como cliente para comprar.");
@@ -276,7 +281,16 @@ public class PedidoController {
             return "redirect:/login";
         }
 
-        // VALIDAR LOS PRODUCTOS RECIBIDOS
+        Usuario usuario = usuarioRepository.findById(usuarioId).orElse(null);
+
+        if (usuario == null) {
+
+            redirectAttributes.addFlashAttribute(
+                    "error", "No se encontró el usuario. Inicie sesión nuevamente.");
+
+            return "redirect:/login";
+        }
+
         if (productoIds == null
                 || cantidades == null
                 || productoIds.isEmpty()
@@ -288,7 +302,6 @@ public class PedidoController {
             return "redirect:/tienda";
         }
 
-        // AGRUPAR CANTIDADES POR PRODUCTO
         Map<Long, Integer> cantidadesPorProducto = new HashMap<>();
 
         for (int i = 0; i < productoIds.size(); i++) {
@@ -309,7 +322,6 @@ public class PedidoController {
                     Integer::sum);
         }
 
-        // CONSULTAR Y VALIDAR INVENTARIO
         Map<Long, Producto> productosSeleccionados = new HashMap<>();
 
         for (Map.Entry<Long, Integer> entrada : cantidadesPorProducto.entrySet()) {
@@ -338,7 +350,6 @@ public class PedidoController {
             productosSeleccionados.put(producto.getId(), producto);
         }
 
-        // CALCULAR EL TOTAL
         BigDecimal total = BigDecimal.ZERO;
 
         for (Map.Entry<Long, Integer> entrada : cantidadesPorProducto.entrySet()) {
@@ -351,13 +362,14 @@ public class PedidoController {
             total = total.add(subtotal);
         }
 
-        // CREAR EL PEDIDO CON EL NOMBRE DE LA SESIÓN
+        // CREAR EL PEDIDO Y ASOCIARLO CON EL USUARIO
         Pedido pedido = new Pedido();
 
         pedido.setNombreCliente(nombreCliente);
         pedido.setFecha(LocalDateTime.now());
         pedido.setEstado("Pendiente");
         pedido.setTotal(total);
+        pedido.setUsuario(usuario);
 
         pedidoRepository.save(pedido);
 
